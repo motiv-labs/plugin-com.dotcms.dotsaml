@@ -128,12 +128,18 @@ public class OpenSamlAuthenticationServiceImpl implements SamlAuthenticationServ
 		}
 	}
 
-	private void addRole(final User user, final String removeRolePrefix, final XMLObject roleObject)
+	private void addRole(final User user, final String removeRolePrefix,
+						 final String roleKeyRegex, final String roleKeyReplacement, final XMLObject roleObject)
 			throws DotDataException {
-		// remove role prefix
-		final String roleKey = (isSet(removeRolePrefix))
+		// remove role prefix is is set
+		final String roleKeyWithoutReplacement = (isSet(removeRolePrefix))
 				? roleObject.getDOM().getFirstChild().getNodeValue().replaceFirst(removeRolePrefix, StringUtils.EMPTY)
 				: roleObject.getDOM().getFirstChild().getNodeValue();
+
+		// replace role key regex if set
+		final String roleKey = (isSet(roleKeyWithoutReplacement) && isSet(roleKeyRegex))
+				? roleKeyWithoutReplacement.replaceAll(roleKeyRegex, roleKeyReplacement)
+				: roleKeyWithoutReplacement;
 
 		addRole(user, roleKey, false, false);
 	}
@@ -183,8 +189,28 @@ public class OpenSamlAuthenticationServiceImpl implements SamlAuthenticationServ
 			final String[] rolePatterns = DotsamlPropertiesService.getOptionStringArray(idpConfig,
 					DotsamlPropertyName.DOTCMS_SAML_INCLUDE_ROLES_PATTERN);
 
+			final String roleKeySubstitution = DotsamlPropertiesService.getOptionString(idpConfig,
+					DotsamlPropertyName.DOT_SAML_ROLE_KEY_SUBSTITUTION);
+
 			Logger.debug(this,
-					"Role Patterns: " + this.toString(rolePatterns) + ", remove role prefix: " + removeRolePrefix);
+					"Role Patterns: " + this.toString(rolePatterns) + ", remove role prefix: " + removeRolePrefix
+							+ ", role key substitution: " + roleKeySubstitution);
+
+			// Extract role key substitution
+			String roleKeyRegex = null;
+			String roleKeyReplacement = null;
+			if (isSet(roleKeySubstitution)) {
+				if (StringUtils.startsWith(roleKeySubstitution, "/") && StringUtils.endsWith(roleKeySubstitution, "/")) {
+					String [] roleKeySubstitutionParts = StringUtils.split(
+							StringUtils.strip(roleKeySubstitution,  "/"), '/');
+					roleKeyRegex = roleKeySubstitutionParts[0];
+					if (roleKeySubstitutionParts.length > 1) {
+						roleKeyReplacement = roleKeySubstitutionParts[1];
+					}
+				} else {
+					Logger.warn(this, "Role key substitution not formed as /regex/replacement/ : " + roleKeySubstitution);
+				}
+			}
 
 			// add roles
 			for (XMLObject roleObject : attributesBean.getRoles().getAttributeValues()) {
@@ -204,7 +230,7 @@ public class OpenSamlAuthenticationServiceImpl implements SamlAuthenticationServ
 					}
 				}
 
-				this.addRole(user, removeRolePrefix, roleObject);
+				this.addRole(user, removeRolePrefix, roleKeyRegex, roleKeyReplacement, roleObject);
 			}
 		} else {
 			Logger.info(this, "Roles have been ignore by the build roles strategy: " + buildRolesStrategy
@@ -748,6 +774,10 @@ public class OpenSamlAuthenticationServiceImpl implements SamlAuthenticationServ
 	// the existing or created user, will be updated the roles if they present
 	// on the assertion.
 	public User resolveUser(final Assertion assertion, final IdpConfig idpConfig) {
+
+		final String subjectNameID = assertion != null && assertion.getSubject() != null
+			&& assertion.getSubject().getNameID() != null ? assertion.getSubject().getNameID().getValue() : "(no-id)";
+
 		User systemUser = null;
 		User user = null;
 		AttributesBean attributesBean = null;
@@ -764,11 +794,10 @@ public class OpenSamlAuthenticationServiceImpl implements SamlAuthenticationServ
 			Logger.error(this, e.getMessage());
 			return null;
 		} catch (NoSuchUserException e) {
-			Logger.error(this, "No user matches ID '" + attributesBean.getNameID().getValue() + "'. Creating one...");
+			Logger.error(this, "No user matches ID '" + subjectNameID + "'. Creating one...");
 			user = null;
 		} catch (Exception e) {
-			Logger.error(this, "An error occurred when loading user with ID '" + attributesBean.getNameID().getValue()
-					+ "'", e);
+			Logger.error(this, "An error occurred when loading user with ID '" + subjectNameID + "'", e);
 			user = null;
 		}
 
@@ -783,8 +812,7 @@ public class OpenSamlAuthenticationServiceImpl implements SamlAuthenticationServ
 		if (user.isActive()) {
 			this.addRoles(user, attributesBean, idpConfig);
 		} else {
-			Logger.info(this, "User with ID '" + attributesBean.getNameID().getValue() + "' is not active. No roles " +
-					"were added.");
+			Logger.info(this, "User with ID '" +subjectNameID + "' is not active. No roles were added.");
 		}
 
 		return user;

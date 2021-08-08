@@ -197,6 +197,9 @@ public class DotsamlDefaultPropertiesService {
 		case DOT_SAML_REMOVE_ROLES_PREFIX:
 			defaultParams.setDotSamlRemoveRolesPrefix(value);
 			break;
+		case DOT_SAML_ROLE_KEY_SUBSTITUTION:X:
+			defaultParams.setDotSamlRoleKeySubstitution(value);
+			break;
 		case DOT_SAML_ROLES_ATTRIBUTE:
 			defaultParams.setDotSamlRolesAttribute(value);
 			break;
@@ -272,6 +275,8 @@ public class DotsamlDefaultPropertiesService {
 			return defaultParams.getDotSamlLogoutServiceEndpointUrl();
 		case DOT_SAML_REMOVE_ROLES_PREFIX:
 			return defaultParams.getDotSamlRemoveRolesPrefix();
+		case DOT_SAML_ROLE_KEY_SUBSTITUTION:
+			return defaultParams.getDotSamlRoleKeySubstitution();
 		case DOT_SAML_ROLES_ATTRIBUTE:
 			return defaultParams.getDotSamlRolesAttribute();
 		case DOT_SAML_SERVICE_PROVIDER_CUSTOM_CREDENTIAL_PROVIDER_CLASSNAME:
