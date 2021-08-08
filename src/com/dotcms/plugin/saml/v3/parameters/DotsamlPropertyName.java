@@ -241,7 +241,14 @@ public enum DotsamlPropertyName {
 	 * prefix by setting this prop.
 	 */
 	DOT_SAML_REMOVE_ROLES_PREFIX("remove.roles.prefix"),
-	
+
+	/**
+	 * Substitution to replace characters from role attribute sent from IdP with another character expression
+	 * For example: role.key.substitution=/_sepsep_/ /
+	 * To replace '_sepsep_' with a space character
+	 */
+	DOT_SAML_ROLE_KEY_SUBSTITUTION("role.key.substitution"),
+
 	/**
 	 * By default dotcms use: "authorisations", but you can override it just
 	 * adding the roles attribute name you want. "authorisations" will be the
