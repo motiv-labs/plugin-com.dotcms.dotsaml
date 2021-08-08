@@ -197,7 +197,7 @@ public class DotsamlDefaultPropertiesService {
 		case DOT_SAML_REMOVE_ROLES_PREFIX:
 			defaultParams.setDotSamlRemoveRolesPrefix(value);
 			break;
-		case DOT_SAML_ROLE_KEY_SUBSTITUTION:X:
+		case DOT_SAML_ROLE_KEY_SUBSTITUTION:
 			defaultParams.setDotSamlRoleKeySubstitution(value);
 			break;
 		case DOT_SAML_ROLES_ATTRIBUTE:
