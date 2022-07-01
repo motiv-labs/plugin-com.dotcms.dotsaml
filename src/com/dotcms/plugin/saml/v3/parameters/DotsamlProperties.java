@@ -42,6 +42,7 @@ public class DotsamlProperties {
 	private Boolean dotcmsSamlPolicyAllowCreate = false;
 	private String dotcmsSamlProtocolBinding = SAMLConstants.SAML2_REDIRECT_BINDING_URI;
 	private String dotSamlRemoveRolesPrefix = StringUtils.EMPTY;
+	private String dotSamlRoleKeySubstitution = StringUtils.EMPTY;
 	private String dotSamlServiceProviderCustomCredentialProviderClassname = null;
 	private Boolean dotcmsSamlUseEncryptedDescriptor = false;
 	private Boolean dotSamlVerifySignatureCredentials = true;
@@ -304,6 +305,14 @@ public class DotsamlProperties {
 
 	public void setDotSamlRemoveRolesPrefix(String dotSamlRemoveRolesPrefix) {
 		this.dotSamlRemoveRolesPrefix = dotSamlRemoveRolesPrefix;
+	}
+
+	public String getDotSamlRoleKeySubstitution() {
+		return dotSamlRoleKeySubstitution;
+	}
+
+	public void setDotSamlRoleKeySubstitution(String dotSamlRoleKeySubstitution) {
+		this.dotSamlRoleKeySubstitution = dotSamlRoleKeySubstitution;
 	}
 
 	public String getDotSamlServiceProviderCustomCredentialProviderClassname() {
