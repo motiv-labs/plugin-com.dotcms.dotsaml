@@ -23,11 +23,16 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
+import com.dotcms.plugin.saml.v3.key.BindingType;
+import com.dotmarketing.util.*;
 import org.opensaml.core.xml.XMLObject;
 import org.opensaml.messaging.context.MessageContext;
 import org.opensaml.messaging.encoder.MessageEncodingException;
 import org.opensaml.saml.common.messaging.context.SAMLEndpointContext;
 import org.opensaml.saml.common.messaging.context.SAMLPeerEntityContext;
+import org.opensaml.saml.saml2.binding.encoding.impl.BaseSAML2MessageEncoder;
+import org.opensaml.saml.saml2.binding.encoding.impl.HTTPPostEncoder;
+import org.opensaml.saml.saml2.binding.encoding.impl.HTTPPostSimpleSignEncoder;
 import org.opensaml.saml.saml2.binding.encoding.impl.HTTPRedirectDeflateEncoder;
 import org.opensaml.saml.saml2.core.Assertion;
 import org.opensaml.saml.saml2.core.Attribute;
@@ -63,13 +68,6 @@ import com.dotmarketing.business.RoleAPI;
 import com.dotmarketing.business.UserAPI;
 import com.dotmarketing.cms.factories.PublicEncryptionFactory;
 import com.dotmarketing.exception.DotDataException;
-import com.dotmarketing.util.ActivityLogger;
-import com.dotmarketing.util.AdminLogger;
-import com.dotmarketing.util.DateUtil;
-import com.dotmarketing.util.Logger;
-import com.dotmarketing.util.RegEX;
-import com.dotmarketing.util.UUIDGenerator;
-import com.dotmarketing.util.UtilMethods;
 import com.dotmarketing.util.json.JSONException;
 import com.liferay.portal.model.User;
 
@@ -462,12 +460,11 @@ public class OpenSamlAuthenticationServiceImpl implements SamlAuthenticationServ
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	private void doRedirect(final MessageContext context, final HttpServletResponse response,
 			final XMLObject xmlObject, final IdpConfig idpConfig) {
-		final HTTPRedirectDeflateEncoder encoder;
 
 		final boolean clearQueryParams = DotsamlPropertiesService.getOptionBoolean(idpConfig, DotsamlPropertyName.DOTCMS_SAML_CLEAR_LOCATION_QUERY_PARAMS);
 
 		try {
-			encoder = new DotHTTPRedirectDeflateEncoder(clearQueryParams);
+			final BaseSAML2MessageEncoder encoder = getBindingEncoder(idpConfig, clearQueryParams);
 
 			encoder.setMessageContext(context);
 			encoder.setHttpServletResponse(response);
@@ -486,6 +483,25 @@ public class OpenSamlAuthenticationServiceImpl implements SamlAuthenticationServ
 			throw new DotSamlException(errorMsg, e);
 		}
 
+	}
+
+	private BaseSAML2MessageEncoder getBindingEncoder(
+			final IdpConfig idpConfig, final boolean clearQueryParams) {
+
+		String bindingType = DotsamlPropertiesService.getOptionString(idpConfig,
+				DotsamlPropertyName.DOTCMS_SAML_BINDING_TYPE);
+
+		BaseSAML2MessageEncoder encoder;
+		if (StringUtils.equals(BindingType.POST.getBinding(), bindingType)) {
+			Logger.debug(this, "Creating encoder for HTTP-POST binding");
+			HTTPPostEncoder httpPostEncoder = new HTTPPostSimpleSignEncoder();
+			httpPostEncoder.setVelocityEngine(VelocityUtil.getEngine());
+			encoder = httpPostEncoder;
+		} else {
+			Logger.debug(this, "Creating encoder for HTTP-Redirect binding");
+			encoder = new DotHTTPRedirectDeflateEncoder(clearQueryParams);
+		}
+		return encoder;
 	}
 
 	private AttributesBean doubleCheckAttributes(final AttributesBean originalAttributes, final String firstNameField,
