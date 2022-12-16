@@ -23,6 +23,8 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * Implements the SAML config caching functionality.
@@ -180,7 +182,8 @@ public class SamlCacheImpl extends SamlCache
 
 		//Logger.info( this, "Clearing idpConfig cache." );
 
-		this.clearCache();
+		final Map<String, IdpConfig> oldConfigMap = this.getIdpConfigs().stream().collect(
+				Collectors.toMap( IdpConfig::getId, Function.identity()));
 
 		idpConfigs.forEach( idpConfig ->{
 			try
@@ -194,10 +197,23 @@ public class SamlCacheImpl extends SamlCache
 					this.addSitesIdpConfigId( sites, idpConfig.getId() );
 				}
 
+				oldConfigMap.remove( idpConfig.getId() );
+
 			}
 			catch ( Exception exception )
 			{
 				Logger.error( this, tag + "Error adding idpConfig to cache.", exception );
+			}
+		});
+
+		oldConfigMap.forEach( ( id, idpConfig ) -> {
+			try
+			{
+				this.removeIdpConfig( idpConfig );
+			}
+			catch ( Exception exception )
+			{
+				Logger.error( this, tag + "Error removing idpConfig from cache.", exception );
 			}
 		});
 	}
